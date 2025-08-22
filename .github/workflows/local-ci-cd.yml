@@ -52,3 +52,27 @@ jobs:
       run: |
         docker tag $IMAGE_NAME ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
+
+  deploy-ready:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - name: Deployment Ready Notification
+      run: |
+        echo "🎉 CI/CD Pipeline Completed Successfully!"
+        echo "📦 Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest"
+        echo "✅ Image pushed to Docker Hub and ready for deployment"
+        echo ""
+        echo "To deploy locally:"
+        echo "docker pull ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest"
+        echo "docker run -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest"
+        
+        echo "To deploy with Docker Compose:"
+        echo "docker-compose up -d"
+        
+        echo "To deploy to Minikube:"
+        echo "minikube start"
+        echo "minikube image load ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest"
+        echo "kubectl create deployment my-app --image=${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest"
+        echo "kubectl expose deployment my-app --type=NodePort --port=8000"
