@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - NAME=CI/CD Pipeline
+    # NO volumes section - we want to run the built image
+
+  tests:
+    build: .
+    command: ["python", "-m", "pytest", "/app/app/test_main.py", "-v"]
+    depends_on:
+      - web
+    # NO volumes section - tests should run against built image
