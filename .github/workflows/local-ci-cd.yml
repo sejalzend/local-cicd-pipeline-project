@@ -1,4 +1,4 @@
-name: Local CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04  # Use supported Ubuntu version
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
 
   build-and-push:
     needs: test
-    runs-on: ubuntu-20.04  # Use supported Ubuntu version
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
     - name: Checkout code
@@ -52,37 +52,3 @@ jobs:
       run: |
         docker tag $IMAGE_NAME ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-20.04  # Use supported Ubuntu version
-    if: github.ref == 'refs/heads/main'
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Minikube
-      uses: manusa/actions-setup-minikube@v2.6.0
-      with:
-        # CORRECTED: Use proper input names (with spaces)
-        'minikube version': 'v1.24.0'
-        'kubernetes version': 'v1.22.3'
-        driver: 'docker'
-
-    - name: Deploy to Minikube
-      run: |
-        # Load the Docker image into Minikube
-        minikube image load ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
-        
-        # Create deployment
-        kubectl create deployment $IMAGE_NAME --image=${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
-        
-        # Expose service
-        kubectl expose deployment $IMAGE_NAME --type=NodePort --port=8000
-        
-        # Wait for deployment to be ready
-        kubectl rollout status deployment/$IMAGE_NAME
-        
-        # Get the Minikube IP and service URL
-        echo "Application deployed at:"
-        minikube service $IMAGE_NAME --url
